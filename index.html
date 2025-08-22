@@ -2,17 +2,18 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（自動追蹤）</title>
+<title>斜拋運動模擬（自動追蹤 + 位移顯示）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
 .controls { margin: 15px; }
 label { display: block; margin-top: 5px; }
 button { margin: 10px; padding: 6px 12px; font-size: 16px; }
+#displacement { margin-top: 10px; font-size: 18px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（自動追蹤）</h2>
+<h2>⚽ 斜拋運動模擬（自動追蹤 + 位移顯示）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -21,6 +22,10 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
   <label>初始高度 h₀ (m): <input type="range" id="h0" min="0" max="100" value="0"> <span id="h0_val">0</span></label>
   <button id="startBtn">開始</button>
   <button id="resetBtn">重設</button>
+</div>
+
+<div id="displacement">
+  水平位移 X: <span id="dispX">0</span> m ，鉛直位移 Y: <span id="dispY">0</span> m
 </div>
 
 <script>
@@ -38,7 +43,10 @@ const h0Val = document.getElementById("h0_val");
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-const g = 9.8; // 重力加速度 m/s²
+const dispX = document.getElementById("dispX");
+const dispY = document.getElementById("dispY");
+
+const g = 9.8; // m/s²
 const scale = 4; // 1 m -> 4 px
 const dt = 0.02; // 真實速度動畫步長
 
@@ -72,15 +80,21 @@ function resetBall(){
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
 
+  updateDisplacement();
   drawScene();
+}
+
+function updateDisplacement(){
+  dispX.textContent = ball.x.toFixed(2);
+  dispY.textContent = ball.y.toFixed(2);
 }
 
 function drawScene(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 自動追蹤球，水平和垂直
-  let offsetX = ball.x*scale - canvas.width/4; // 球保持在畫面左1/4
-  let offsetY = ball.y*scale - canvas.height/2; // 球保持在畫面中間
+  // 自動追蹤球
+  let offsetX = ball.x*scale - canvas.width/4;
+  let offsetY = ball.y*scale - canvas.height/2;
   if(offsetX < 0) offsetX = 0;
   if(offsetY < 0) offsetY = 0;
 
@@ -144,6 +158,7 @@ function animate(){
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
+  updateDisplacement();
   drawScene();
 
   if(ball.y <= 0 && ball.t>0){
