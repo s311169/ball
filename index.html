@@ -12,7 +12,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（自動追蹤+水平垂直比例尺）</h2>
+<h2>⚽ 斜拋運動模擬（自動追蹤）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -38,17 +38,17 @@ const h0Val = document.getElementById("h0_val");
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-const g = 9.8; // m/s²
-const scale = 4; // 畫布縮放比例 (1 m -> 4 px)
-const dt = 0.02; // 真實速度
+const g = 9.8; // 重力加速度 m/s²
+const scale = 4; // 1 m -> 4 px
+const dt = 0.02; // 真實速度動畫步長
 
 let v0 = parseFloat(v0Slider.value);
-let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
+let theta = parseFloat(thetaSlider.value) * Math.PI/180;
 let h0 = parseFloat(h0Slider.value);
 
-let ball = { x: 0, y: 0, vx:0, vy:0, t:0 };
+let ball = {x:0, y:0, vx:0, vy:0, t:0};
 let animating = false;
-let trajectory = []; // 飛行軌跡
+let trajectory = [];
 
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
@@ -62,7 +62,7 @@ h0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 
 function resetBall(){
   v0 = parseFloat(v0Slider.value);
-  theta = parseFloat(thetaSlider.value) * Math.PI / 180;
+  theta = parseFloat(thetaSlider.value) * Math.PI/180;
   h0 = parseFloat(h0Slider.value);
 
   ball.x = 0;
@@ -78,14 +78,14 @@ function resetBall(){
 function drawScene(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 自動追蹤球，計算偏移量
+  // 自動追蹤球，水平和垂直
   let offsetX = ball.x*scale - canvas.width/4; // 球保持在畫面左1/4
-  let offsetY = ball.y*scale - canvas.height/2; // 球保持在畫面中間偏下
+  let offsetY = ball.y*scale - canvas.height/2; // 球保持在畫面中間
   if(offsetX < 0) offsetX = 0;
   if(offsetY < 0) offsetY = 0;
 
   // 水平比例尺，每10m一格
-  let maxHorizontal = offsetX/scale + canvas.width/scale;
+  let maxHorizontal = offsetX/scale + canvas.width/scale + 20;
   for(let i=0;i<=maxHorizontal;i+=10){
     let px = i*scale - offsetX;
     ctx.beginPath();
@@ -99,7 +99,7 @@ function drawScene(){
   }
 
   // 垂直比例尺，每10m一格
-  let maxVertical = offsetY/scale + canvas.height/scale;
+  let maxVertical = offsetY/scale + canvas.height/scale + 20;
   for(let j=0;j<=maxVertical;j+=10){
     let py = canvas.height - (j*scale - offsetY);
     ctx.beginPath();
@@ -135,13 +135,12 @@ function drawScene(){
   ctx.stroke();
 }
 
-// 動畫
 function animate(){
   if(!animating) return;
 
   ball.t += dt;
   ball.x = ball.vx * ball.t;
-  ball.y = h0 + ball.vy * ball.t - 0.5 * g * ball.t * ball.t;
+  ball.y = h0 + ball.vy * ball.t - 0.5*g*ball.t*ball.t;
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
