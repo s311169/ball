@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（固定最高點）</title>
+<title>斜拋運動模擬（即時位移 + 最高點標示）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -13,7 +13,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（固定最高點標註）</h2>
+<h2>⚽ 斜拋運動模擬（即時位移 + 最高點標示）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -60,7 +60,6 @@ let ball = {x:0, y:0, vx:0, vy:0, t:0};
 let animating = false;
 let trajectory = [];
 let highestY = 0;
-let highestPoint = {x:0, y:0}; // 固定最高點位置
 
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
@@ -83,12 +82,7 @@ function resetBall(){
   ball.vy = v0 * Math.sin(theta);
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
-
-  // 計算最高點（固定）
-  highestY = h0 + (ball.vy**2)/(2*g);
-  let tMax = ball.vy/g;
-  let xMax = ball.vx * tMax;
-  highestPoint = {x: xMax, y: highestY};
+  highestY = ball.y;
 
   updateInfo();
   drawScene();
@@ -131,17 +125,17 @@ function drawScene(){
   ctx.fill();
   ctx.stroke();
 
-  // 固定最高點標註
-  let highX = highestPoint.x*scale - offsetX;
-  let highY = canvas.height - (highestPoint.y*scale - offsetY);
+  // 標示最高點
+  let pyMax = canvas.height - (highestY*scale - offsetY);
   ctx.beginPath();
-  ctx.arc(highX, highY, 10, 0, 2*Math.PI);
-  ctx.fillStyle = "green";
-  ctx.fill();
+  ctx.moveTo(0, pyMax);
+  ctx.lineTo(canvas.width, pyMax);
+  ctx.strokeStyle = "green";
+  ctx.setLineDash([5,5]);
   ctx.stroke();
+  ctx.setLineDash([]);
   ctx.fillStyle = "green";
-  ctx.font = "16px Arial";
-  ctx.fillText("最高點: " + highestY.toFixed(2) + " m", highX + 15, highY - 10);
+  ctx.fillText("最高點: " + highestY.toFixed(2) + " m", 10, pyMax-5);
 }
 
 function animate(){
@@ -152,6 +146,8 @@ function animate(){
   ball.y = h0 + ball.vy * ball.t - 0.5*g*ball.t*ball.t;
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
+
+  if(ball.y > highestY) highestY = ball.y;
 
   updateInfo();
   drawScene();
