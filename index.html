@@ -1,312 +1,133 @@
-<!DOCTYPE html> <!-- 聲明 HTML5 文件類型 -->
-<html lang="zh-Hant"> <!-- 設定網頁語系為繁體中文 -->
-<head> <!-- 文件頭部開始 -->
-  <meta charset="UTF-8"> <!-- 設定字元編碼為 UTF-8，避免亂碼 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 行動裝置適配 -->
-  <title>拋體運動模擬器 (HTML5)</title> <!-- 瀏覽器分頁標題 -->
-  <style> /* 內嵌 CSS 樣式開始 */
-    :root { /* 定義一些共用變數供樣式使用 */
-      --gap: 12px; /* 控制整體間距 */
-      --pad: 16px; /* 控制容器內距 */
-      --radius: 14px; /* 控制圓角 */
-      --shadow: 0 8px 24px rgba(0,0,0,.08); /* 控制陰影 */
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; /* 等寬字體 */
-    }
-    body { /* 設定全頁面的基礎字體與背景 */
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif; /* 使用系統字體 */
-      margin: 0; /* 移除預設外距 */
-      background: #f6f7fb; /* 柔和的背景色 */
-      color: #222; /* 主要文字顏色 */
-      line-height: 1.5; /* 行高讓文字更易讀 */
-    }
-    .wrap { /* 最外層容器 */
-      max-width: 1000px; /* 限制內容最大寬度 */
-      margin: 24px auto; /* 置中並加上下外距 */
-      padding: 0 var(--pad); /* 左右留白 */
-    }
-    .card { /* 卡片樣式容器 */
-      background: #fff; /* 白色背景 */
-      border-radius: var(--radius); /* 圓角 */
-      box-shadow: var(--shadow); /* 陰影 */
-      padding: var(--pad); /* 內距 */
-    }
-    h1 { /* 主標題樣式 */
-      margin: 0 0 8px; /* 下方留間距 */
-      font-size: 22px; /* 文字大小 */
-      letter-spacing: .2px; /* 微調字距 */
-    }
-    p.note { /* 說明文字樣式 */
-      margin: 0 0 16px; /* 下方外距 */
-      color: #555; /* 次要文字色 */
-      font-size: 14px; /* 稍小的文字 */
-    }
-    .controls { /* 控制區容器 */
-      display: grid; /* 使用網格排版 */
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* 自適應欄寬 */
-      gap: var(--gap); /* 欄位間距 */
-      margin-bottom: var(--gap); /* 與畫布區的距離 */
-    }
-    .field { /* 單一控制欄位卡片 */
-      background: #fafafa; /* 淺灰背景區分 */
-      border-radius: var(--radius); /* 圓角 */
-      padding: 12px; /* 內距 */
-      border: 1px solid #eee; /* 細邊框 */
-    }
-    .field label { /* 標籤樣式 */
-      display: block; /* 佔滿一行 */
-      font-weight: 600; /* 稍微加粗 */
-      margin-bottom: 6px; /* 與滑桿距離 */
-    }
-    .field input[type="range"] { /* 滑桿基礎樣式 */
-      width: 100%; /* 滿版寬度 */
-    }
-    .values { /* 參數即時數值的區域 */
-      font-family: var(--mono); /* 使用等寬字體 */
-      font-size: 13px; /* 較小字體顯示 */
-      color: #333; /* 文字色 */
-    }
-    .actions { /* 按鈕區容器 */
-      display: flex; /* 彈性排版 */
-      gap: var(--gap); /* 元件間距 */
-      margin-top: var(--gap); /* 與畫布的距離 */
-    }
-    button { /* 按鈕的基礎樣式 */
-      padding: 10px 14px; /* 內距 */
-      border-radius: 12px; /* 圓角 */
-      border: 1px solid #e5e7eb; /* 邊框顏色 */
-      background: #fff; /* 背景色 */
-      cursor: pointer; /* 指標變成手型 */
-      font-weight: 600; /* 文字稍粗 */
-    }
-    button:hover { /* 滑鼠懸停效果 */
-      background: #f2f4f8; /* 稍微變亮 */
-    }
-    canvas { /* 畫布樣式 */
-      width: 100%; /* 滿版寬度 (CSS) */
-      height: 420px; /* 固定高度 (CSS) */
-      background: #ffffff; /* 白底便於觀察 */
-      border-radius: var(--radius); /* 圓角 */
-      box-shadow: inset 0 0 0 1px #eee; /* 內陰影形成細邊框 */
-      display: block; /* 移除底下空隙 */
-    }
-    .readouts { /* 顯示計算結果的區域 */
-      display: grid; /* 使用網格排版 */
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* 自適應欄位 */
-      gap: var(--gap); /* 欄距 */
-      margin-top: var(--gap); /* 與按鈕距離 */
-    }
-    .stat { /* 單一數值卡片 */
-      background: #fafafa; /* 淺色背景 */
-      border-radius: var(--radius); /* 圓角 */
-      padding: 12px; /* 內距 */
-      border: 1px solid #eee; /* 細邊框 */
-      font-family: var(--mono); /* 等寬字體 */
-      font-size: 14px; /* 字體大小 */
-    }
-  </style> <!-- 內嵌 CSS 樣式結束 -->
-</head> <!-- 文件頭部結束 -->
-<body> <!-- 文件主體開始 -->
-  <div class="wrap"> <!-- 外層容器，用來置中內容 -->
-    <div class="card"> <!-- 白色卡片，包住全部內容 -->
-      <h1>拋體運動模擬器 (HTML5 Canvas)</h1> <!-- 主標題文字 -->
-      <p class="note">拖曳滑桿調整 <strong>仰角 θ</strong>、<strong>初速 v₀</strong>、<strong>高度 h₀</strong>；畫布會即時更新軌跡。重力加速度 g = 9.8 m/s²。</p> <!-- 說明文字 -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>拋體運動模擬</title>
+  <style>
+    body { text-align: center; font-family: Arial, sans-serif; }
+    canvas { border: 1px solid black; display: block; margin: 10px auto; background: #eef; }
+    .controls { margin: 15px; }
+    label { display: block; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h2>⚽ 拋體運動模擬 (HTML5)</h2>
+  <canvas id="canvas" width="800" height="400"></canvas>
 
-      <div class="controls"> <!-- 參數控制區的容器 -->
-        <div class="field"> <!-- 單一欄位：仰角 -->
-          <label for="theta">仰角 θ (度) <span class="values" id="thetaVal"><!-- 顯示當前角度值 --></span></label> <!-- 標籤與即時值 -->
-          <input id="theta" type="range" min="0.1" max="85" step="0.1" value="45"> <!-- 角度滑桿 -->
-        </div> <!-- 欄位結束 -->
-        <div class="field"> <!-- 單一欄位：初速 -->
-          <label for="v0">初速 v₀ (m/s) <span class="values" id="v0Val"><!-- 顯示當前初速值 --></span></label> <!-- 標籤與即時值 -->
-          <input id="v0" type="range" min="0.1" max="50" step="0.1" value="20"> <!-- 初速滑桿 -->
-        </div> <!-- 欄位結束 -->
-        <div class="field"> <!-- 單一欄位：高度 -->
-          <label for="h0">高度 h₀ (m) <span class="values" id="h0Val"><!-- 顯示當前高度值 --></span></label> <!-- 標籤與即時值 -->
-          <input id="h0" type="range" min="0" max="20" step="0.1" value="1"> <!-- 高度滑桿 -->
-        </div> <!-- 欄位結束 -->
-      </div> <!-- 控制區結束 -->
+  <div class="controls">
+    <label>初速 v₀: <input type="range" id="v0" min="10" max="100" value="50"> <span id="v0_val">50</span> m/s</label>
+    <label>仰角 θ: <input type="range" id="theta" min="0" max="90" value="45"> <span id="theta_val">45</span> °</label>
+    <label>初始高度 h₀: <input type="range" id="h0" min="0" max="100" value="0"> <span id="h0_val">0</span> m</label>
+    <button id="startBtn">開始</button>
+    <button id="resetBtn">重設</button>
+  </div>
 
-      <canvas id="plot" width="1000" height="420"> <!-- 用於繪圖的 Canvas (設定裝置像素尺寸) -->
-        您的瀏覽器不支援 Canvas。 <!-- 不支援時顯示的替代文字 -->
-      </canvas> <!-- 畫布結束 -->
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
-      <div class="actions"> <!-- 動作按鈕區 -->
-        <button id="reset">重設為預設值</button> <!-- 重設參數按鈕 -->
-        <button id="exportPNG">匯出 PNG</button> <!-- 將畫布匯出為圖片 -->
-      </div> <!-- 動作按鈕區結束 -->
+    // DOM 元素
+    const v0Slider = document.getElementById("v0");
+    const thetaSlider = document.getElementById("theta");
+    const h0Slider = document.getElementById("h0");
+    const v0Val = document.getElementById("v0_val");
+    const thetaVal = document.getElementById("theta_val");
+    const h0Val = document.getElementById("h0_val");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
 
-      <div class="readouts"> <!-- 計算結果顯示區 -->
-        <div class="stat" id="timeReadout">飛行時間 t = -- s</div> <!-- 顯示飛行時間 -->
-        <div class="stat" id="rangeReadout">水平射程 R = -- m</div> <!-- 顯示水平射程 -->
-        <div class="stat" id="hmaxReadout">最大高度 Hmax = -- m</div> <!-- 顯示最大高度 -->
-      </div> <!-- 計算結果顯示區結束 -->
-    </div> <!-- 卡片容器結束 -->
-  </div> <!-- 外層容器結束 -->
+    // 模擬參數
+    let v0 = parseFloat(v0Slider.value);
+    let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
+    let h0 = parseFloat(h0Slider.value);
+    const g = 9.8; // 重力加速度
 
-  <script> // 內嵌 JavaScript 腳本開始
-    "use strict"; // 啟用嚴格模式，避免隱性錯誤
+    // 球的狀態
+    let ball = { x: 50, y: canvas.height - h0, vx: 0, vy: 0, t: 0 };
+    let animating = false;
 
-    // === 取得 DOM 元素引用 ===
-    const canvas = document.getElementById("plot"); // 取得畫布元素
-    const ctx = canvas.getContext("2d"); // 取得 2D 畫圖上下文
-
-    const thetaSlider = document.getElementById("theta"); // 取得仰角滑桿
-    const v0Slider = document.getElementById("v0"); // 取得初速滑桿
-    const h0Slider = document.getElementById("h0"); // 取得高度滑桿
-
-    const thetaVal = document.getElementById("thetaVal"); // 顯示仰角數值的 span
-    const v0Val = document.getElementById("v0Val"); // 顯示初速數值的 span
-    const h0Val = document.getElementById("h0Val"); // 顯示高度數值的 span
-
-    const resetBtn = document.getElementById("reset"); // 重設按鈕
-    const exportBtn = document.getElementById("exportPNG"); // 匯出 PNG 按鈕
-
-    const timeReadout = document.getElementById("timeReadout"); // 顯示飛行時間的區塊
-    const rangeReadout = document.getElementById("rangeReadout"); // 顯示水平射程的區塊
-    const hmaxReadout = document.getElementById("hmaxReadout"); // 顯示最大高度的區塊
-
-    // === 常數設定 ===
-    const g = 9.8; // 重力加速度 (m/s^2)
-
-    // === 工具函式：把數字格式化到固定小數位 ===
-    const fmt = (x, d=3) => Number.parseFloat(x).toFixed(d); // 傳回固定小數位的字串
-
-    // === 計算：由 (v0, theta, h0) 求軌跡與關鍵量 ===
-    function compute(v0, thetaDeg, h0) { // 定義計算函式，輸入初速、角度(度)、高度
-      const theta = thetaDeg * Math.PI / 180; // 角度轉弧度：θ(rad) = θ(°) * π/180
-      const vx = v0 * Math.cos(theta); // x 方向速度分量 vx = v0 cosθ
-      const vy = v0 * Math.sin(theta); // y 方向速度分量 vy = v0 sinθ
-      const tFlight = (vy + Math.sqrt(vy*vy + 2 * g * h0)) / g; // 落地時間 t = (vy + √(vy²+2gh0))/g
-      const range = vx * tFlight; // 射程 R = vx * t
-      const hmax = h0 + (vy*vy) / (2*g); // 最大高度 Hmax = h0 + vy²/(2g)
-      return { vx, vy, tFlight, range, hmax, theta }; // 回傳關鍵量與弧度角
+    // 更新滑桿顯示
+    function updateLabels() {
+      v0Val.textContent = v0Slider.value;
+      thetaVal.textContent = thetaSlider.value;
+      h0Val.textContent = h0Slider.value;
     }
 
-    // === 將世界座標(公尺)轉為畫布像素座標 ===
-    function makeProjector(range, hmax) { // 建立一個座標轉換器，輸入射程與最大高度
-      const pad = 24; // 畫布四周留白像素
-      const W = canvas.width; // 畫布寬度(像素)
-      const H = canvas.height; // 畫布高度(像素)
-      const xMax = Math.max(1, range) * 1.08; // x 軸最大值(公尺)，留 8% 空間
-      const yMax = Math.max(1, hmax, 1) * 1.15; // y 軸最大值(公尺)，留 15% 空間
-      const sx = (W - 2*pad) / xMax; // 每公尺對應的 x 向縮放(像素/公尺)
-      const sy = (H - 2*pad) / yMax; // 每公尺對應的 y 向縮放(像素/公尺)
-      return {
-        toPx(x, y) { // 把(公尺)轉換成(像素)點
-          const px = pad + x * sx; // x 軸像素位置
-          const py = H - (pad + y * sy); // y 軸像素位置(畫布 y 向下需反轉)
-          return [px, py]; // 回傳像素座標
-        },
-        pad, W, H // 將參數暴露以便其他繪圖函式使用
-      };
+    v0Slider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
+    thetaSlider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
+    h0Slider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
+
+    // 設定初始球位置
+    function resetBall() {
+      v0 = parseFloat(v0Slider.value);
+      theta = parseFloat(thetaSlider.value) * Math.PI / 180;
+      h0 = parseFloat(h0Slider.value);
+
+      ball.x = 50;
+      ball.y = canvas.height - h0;
+      ball.vx = v0 * Math.cos(theta);
+      ball.vy = -v0 * Math.sin(theta); // y 軸向下，所以取負號
+      ball.t = 0;
+
+      drawScene();
     }
 
-    // === 繪製背景軸線與地面 ===
-    function drawAxes(projector) { // 繪製座標軸、地面與刻度
-      const { W, H, pad } = projector; // 解構取出寬、高與留白
-      ctx.clearRect(0, 0, W, H); // 先清空畫布
-      ctx.lineWidth = 1; // 設定線條寬度
-      ctx.strokeStyle = "#e5e7eb"; // 設定輕淡的軸線顏色
+    // 畫布
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 繪製外框(裝飾用)
-      ctx.strokeRect(0.5, 0.5, W-1, H-1); // 畫一個接近邊緣的細框
+      // 地面
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height);
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.strokeStyle = "black";
+      ctx.stroke();
 
-      // 地面線 (y = 0)
-      ctx.beginPath(); // 開始新路徑
-      ctx.moveTo(pad, H - pad); // 從左下角留白起點
-      ctx.lineTo(W - pad, H - pad); // 畫到右下角留白終點
-      ctx.stroke(); // 進行描邊
+      // 球
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, 8, 0, 2 * Math.PI);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.stroke();
+    }
 
-      // y 方向少量水平參考線(網格)
-      const gridCount = 6; // 設定網格行數
-      for (let i = 1; i <= gridCount; i++) { // 逐一畫出網格線
-        const y = pad + i * (H - 2*pad) / gridCount; // 計算每條線的 y 位置
-        ctx.beginPath(); // 新的路徑
-        ctx.moveTo(pad, y); // 起點
-        ctx.lineTo(W - pad, y); // 終點
-        ctx.stroke(); // 描邊
+    // 動畫
+    function animate() {
+      if (!animating) return;
+
+      ball.t += 0.05; // 時間步長
+      ball.x = 50 + ball.vx * ball.t;
+      ball.y = canvas.height - (h0 + ball.vy * ball.t - 0.5 * g * ball.t * ball.t);
+
+      drawScene();
+
+      // 停在地面
+      if (ball.y >= canvas.height) {
+        animating = false;
+        ball.y = canvas.height;
+      } else {
+        requestAnimationFrame(animate);
       }
-
-      // x 軸刻度(簡化版)
-      ctx.fillStyle = "#6b7280"; // 設定文字顏色
-      ctx.font = "12px system-ui"; // 設定字型
-      ctx.fillText("x (m)", W - pad - 36, H - pad + 16); // 在右下角標註 x 單位
-      ctx.fillText("y (m)", pad + 6, pad + 12); // 在左上角附近標註 y 單位
     }
 
-    // === 根據參數繪製拋體軌跡 ===
-    function drawTrajectory(v0, thetaDeg, h0) { // 依照當前參數繪圖
-      const { vx, vy, tFlight, range, hmax, theta } = compute(v0, thetaDeg, h0); // 先計算關鍵量
-      const projector = makeProjector(range, hmax); // 建立座標轉換器
-      drawAxes(projector); // 先畫背景與地面
-
-      // 取樣時間點以形成軌跡折線
-      const N = 300; // 取樣點數(越多越平滑)
-      ctx.beginPath(); // 開始新路徑
-      for (let i = 0; i <= N; i++) { // 逐點繪圖
-        const t = tFlight * (i / N); // 線性取樣時間 0..tFlight
-        const x = vx * t; // 計算 x(t)
-        const y = h0 + vy * t - 0.5 * g * t * t; // 計算 y(t)
-        const [px, py] = projector.toPx(x, y); // 轉成像素座標
-        if (i === 0) ctx.moveTo(px, py); // 第一點移動畫筆
-        else ctx.lineTo(px, py); // 之後連線
+    // 開始按鈕
+    startBtn.onclick = () => {
+      if (!animating) {
+        resetBall(); // 根據目前參數設定速度
+        animating = true;
+        animate();
       }
-      ctx.lineWidth = 2; // 設定軌跡線寬
-      ctx.strokeStyle = "#2563eb"; // 設定軌跡顏色(藍色)
-      ctx.stroke(); // 描邊呈現軌跡
+    };
 
-      // 在落點處畫一個小球表示終點
-      const [ex, ey] = projector.toPx(range, 0); // 計算落點像素座標
-      ctx.beginPath(); // 新路徑
-      ctx.arc(ex, ey, 5, 0, Math.PI * 2); // 畫圓半徑 5 像素
-      ctx.fillStyle = "#ef4444"; // 設定落點顏色(紅)
-      ctx.fill(); // 填滿圓形
+    // 重設按鈕
+    resetBtn.onclick = () => {
+      animating = false;
+      resetBall();
+    };
 
-      // 回填讀數面板
-      timeReadout.textContent = `飛行時間 t = ${fmt(tFlight, 3)} s`; // 顯示 t
-      rangeReadout.textContent = `水平射程 R = ${fmt(range, 3)} m`; // 顯示 R
-      hmaxReadout.textContent = `最大高度 Hmax = ${fmt(hmax, 3)} m`; // 顯示 Hmax
-    }
-
-    // === 將滑桿的值同步到右側數字顯示 ===
-    function syncLabels() { // 讀取滑桿值並顯示文字
-      thetaVal.textContent = `${thetaSlider.value}°`; // 顯示角度數字與度符號
-      v0Val.textContent = `${v0Slider.value} m/s`; // 顯示初速數字與單位
-      h0Val.textContent = `${h0Slider.value} m`; // 顯示高度數字與單位
-    }
-
-    // === 將目前參數套用到畫布 ===
-    function render() { // 組合更新：同步數字 + 繪圖
-      syncLabels(); // 更新數字顯示
-      const v0 = parseFloat(v0Slider.value); // 解析初速數值
-      const theta = parseFloat(thetaSlider.value); // 解析角度數值
-      const h0 = parseFloat(h0Slider.value); // 解析高度數值
-      drawTrajectory(v0, theta, h0); // 呼叫繪圖程序
-    }
-
-    // === 綁定事件：當滑桿改變就重新渲染 ===
-    for (const el of [thetaSlider, v0Slider, h0Slider]) { // 逐一綁定三個滑桿
-      el.addEventListener("input", render); // 在 input 事件觸發時重新繪圖
-    }
-
-    // === 重設按鈕：回到預設值 ===
-    resetBtn.addEventListener("click", () => { // 綁定重設按鈕的點擊事件
-      thetaSlider.value = 45; // 將角度回到 45 度
-      v0Slider.value = 20; // 將初速回到 20 m/s
-      h0Slider.value = 1; // 將高度回到 1 m
-      render(); // 重新繪圖
-    });
-
-    // === 匯出 PNG：把 Canvas 內容以圖片下載 ===
-    exportBtn.addEventListener("click", () => { // 綁定匯出按鈕
-      const a = document.createElement("a"); // 建立一個臨時連結
-      a.download = "projectile.png"; // 設定下載檔名
-      a.href = canvas.toDataURL("image/png"); // 將畫布轉成資料 URL
-      a.click(); // 觸發點擊以下載
-    });
-
-    // === 第一次載入時立即渲染一次 ===
-    render(); // 首次繪圖
-  </script> <!-- 內嵌 JavaScript 腳本結束 -->
-</body> <!-- 文件主體結束 -->
-</html> <!-- 文件結束 -->
+    // 初始顯示
+    updateLabels();
+    resetBall();
+  </script>
+</body>
+</html>
