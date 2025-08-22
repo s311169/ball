@@ -2,18 +2,18 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（比例尺）</title>
+<title>斜拋運動模擬（暫停功能）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
 .controls { margin: 15px; }
 label { display: block; margin-top: 5px; }
-button { margin: 10px; padding: 6px 12px; font-size: 16px; }
+button { margin: 5px; padding: 6px 12px; font-size: 16px; }
 #displacement { margin-top: 10px; font-size: 18px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（比例尺）</h2>
+<h2>⚽ 斜拋運動模擬（暫停功能）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -21,6 +21,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
   <label>仰角 θ (度): <input type="range" id="theta" min="-45" max="80" value="45"> <span id="theta_val">45</span></label>
   <label>初始高度 h₀ (m): <input type="range" id="h0" min="0" max="100" value="0"> <span id="h0_val">0</span></label>
   <button id="startBtn">開始</button>
+  <button id="pauseBtn">暫停</button>
   <button id="resetBtn">重設</button>
 </div>
 
@@ -41,6 +42,7 @@ const thetaVal = document.getElementById("theta_val");
 const h0Val = document.getElementById("h0_val");
 
 const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 
 const dispX = document.getElementById("dispX");
@@ -98,7 +100,7 @@ function drawScene(){
   if(offsetX < 0) offsetX = 0;
   if(offsetY < 0) offsetY = 0;
 
-  // 水平比例尺，每10m一格
+  // 水平比例尺
   let maxHorizontal = offsetX/scale + canvas.width/scale + 20;
   for(let i=0;i<=maxHorizontal;i+=10){
     let px = i*scale - offsetX;
@@ -111,7 +113,7 @@ function drawScene(){
     ctx.fillText(i+" m", px+2, canvas.height-2);
   }
 
-  // 垂直比例尺，每10m一格
+  // 垂直比例尺
   let maxVertical = offsetY/scale + canvas.height/scale + 20;
   for(let j=0;j<=maxVertical;j+=10){
     let py = canvas.height-(j*scale - offsetY);
@@ -167,8 +169,21 @@ function animate(){
   }
 }
 
-startBtn.onclick = () => { if(!animating){ resetBall(); animating=true; animate(); } };
-resetBtn.onclick = () => { animating=false; resetBall(); };
+startBtn.onclick = () => { 
+  if(!animating){ 
+    animating=true; 
+    animate(); 
+  }
+};
+
+pauseBtn.onclick = () => {
+  animating=false;
+};
+
+resetBtn.onclick = () => { 
+  animating=false; 
+  resetBall(); 
+};
 
 updateLabels();
 resetBall();
