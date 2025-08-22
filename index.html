@@ -2,17 +2,17 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（滑鼠追蹤）</title>
+<title>斜拋運動模擬（自動追蹤）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
-canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; cursor: grab; }
+canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
 .controls { margin: 15px; }
 label { display: block; margin-top: 5px; }
 button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（滑鼠拖曳控制鏡頭）</h2>
+<h2>⚽ 斜拋運動模擬（自動追蹤+水平垂直比例尺）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -30,15 +30,17 @@ const ctx = canvas.getContext("2d");
 const v0Slider = document.getElementById("v0");
 const thetaSlider = document.getElementById("theta");
 const h0Slider = document.getElementById("h0");
+
 const v0Val = document.getElementById("v0_val");
 const thetaVal = document.getElementById("theta_val");
 const h0Val = document.getElementById("h0_val");
+
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-const g = 9.8; // 固定重力加速度 m/s²
+const g = 9.8; // m/s²
 const scale = 4; // 畫布縮放比例 (1 m -> 4 px)
-const dt = 0.02; // 動畫時間步長，真實速度
+const dt = 0.02; // 真實速度
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
@@ -47,11 +49,6 @@ let h0 = parseFloat(h0Slider.value);
 let ball = { x: 0, y: 0, vx:0, vy:0, t:0 };
 let animating = false;
 let trajectory = []; // 飛行軌跡
-
-let offsetX = 0; // 畫布水平偏移
-let isDragging = false;
-let dragStartX = 0;
-let offsetStart = 0;
 
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
@@ -74,7 +71,6 @@ function resetBall(){
   ball.vy = v0 * Math.sin(theta);
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
-  offsetX = 0;
 
   drawScene();
 }
@@ -82,22 +78,38 @@ function resetBall(){
 function drawScene(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 地板
-  ctx.beginPath();
-  ctx.moveTo(-offsetX, canvas.height);
-  ctx.lineTo(canvas.width - offsetX, canvas.height);
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  // 自動追蹤球，計算偏移量
+  let offsetX = ball.x*scale - canvas.width/4; // 球保持在畫面左1/4
+  let offsetY = ball.y*scale - canvas.height/2; // 球保持在畫面中間偏下
+  if(offsetX < 0) offsetX = 0;
+  if(offsetY < 0) offsetY = 0;
 
   // 水平比例尺，每10m一格
-  for(let i=0;i<canvas.width/scale+offsetX/scale;i+=10){
+  let maxHorizontal = offsetX/scale + canvas.width/scale;
+  for(let i=0;i<=maxHorizontal;i+=10){
+    let px = i*scale - offsetX;
     ctx.beginPath();
-    ctx.moveTo(i*scale - offsetX, canvas.height);
-    ctx.lineTo(i*scale - offsetX, canvas.height - 5);
-    ctx.strokeStyle = "black";
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, canvas.height);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillText(i+" m", i*scale - offsetX - 10, canvas.height - 10);
+    ctx.fillStyle = "black";
+    ctx.fillText(i+" m", px+2, canvas.height-2);
+  }
+
+  // 垂直比例尺，每10m一格
+  let maxVertical = offsetY/scale + canvas.height/scale;
+  for(let j=0;j<=maxVertical;j+=10){
+    let py = canvas.height - (j*scale - offsetY);
+    ctx.beginPath();
+    ctx.moveTo(0, py);
+    ctx.lineTo(canvas.width, py);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.fillText(j+" m", 2, py-2);
   }
 
   // 軌跡
@@ -105,7 +117,7 @@ function drawScene(){
   for(let i=0;i<trajectory.length;i++){
     let p = trajectory[i];
     let px = p.x*scale - offsetX;
-    let py = canvas.height - p.y*scale;
+    let py = canvas.height - (p.y*scale - offsetY);
     if(i===0) ctx.moveTo(px, py);
     else ctx.lineTo(px, py);
   }
@@ -115,7 +127,9 @@ function drawScene(){
 
   // 球
   ctx.beginPath();
-  ctx.arc(ball.x*scale - offsetX, canvas.height - ball.y*scale, 8, 0, 2*Math.PI);
+  let ballX = ball.x*scale - offsetX;
+  let ballY = canvas.height - (ball.y*scale - offsetY);
+  ctx.arc(ballX, ballY, 8, 0, 2*Math.PI);
   ctx.fillStyle = "red";
   ctx.fill();
   ctx.stroke();
@@ -128,41 +142,18 @@ function animate(){
   ball.t += dt;
   ball.x = ball.vx * ball.t;
   ball.y = h0 + ball.vy * ball.t - 0.5 * g * ball.t * ball.t;
+  if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
   drawScene();
 
-  if(ball.y <= 0){
+  if(ball.y <= 0 && ball.t>0){
     animating = false;
-    ball.y = 0;
     drawScene();
   } else {
     requestAnimationFrame(animate);
   }
 }
-
-// 滑鼠拖曳控制 offsetX
-canvas.addEventListener('mousedown', e=>{
-  isDragging = true;
-  dragStartX = e.clientX;
-  offsetStart = offsetX;
-  canvas.style.cursor = 'grabbing';
-});
-canvas.addEventListener('mousemove', e=>{
-  if(isDragging){
-    offsetX = offsetStart - (e.clientX - dragStartX);
-    if(offsetX < 0) offsetX = 0;
-    drawScene();
-  }
-});
-canvas.addEventListener('mouseup', e=>{
-  isDragging = false;
-  canvas.style.cursor = 'grab';
-});
-canvas.addEventListener('mouseleave', e=>{
-  isDragging = false;
-  canvas.style.cursor = 'grab';
-});
 
 startBtn.onclick = () => {
   if(!animating){
