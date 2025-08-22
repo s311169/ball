@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（公尺單位，動畫加快）</title>
+<title>斜拋運動模擬（3倍速）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -12,14 +12,13 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（公尺單位，動畫加快）</h2>
+<h2>⚽ 斜拋運動模擬（3倍速）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
   <label>初速 v₀ (m/s): <input type="range" id="v0" min="10" max="100" value="50"> <span id="v0_val">50</span></label>
   <label>仰角 θ (度): <input type="range" id="theta" min="-45" max="80" value="45"> <span id="theta_val">45</span></label>
   <label>初始高度 h₀ (m): <input type="range" id="h0" min="0" max="100" value="0"> <span id="h0_val">0</span></label>
-  <label>重力加速度 g (m/s²): <input type="range" id="gravity" min="1" max="20" value="9.8" step="0.1"> <span id="g_val">9.8</span></label>
   <button id="startBtn">開始</button>
   <button id="resetBtn">重設</button>
 </div>
@@ -31,19 +30,17 @@ const ctx = canvas.getContext("2d");
 const v0Slider = document.getElementById("v0");
 const thetaSlider = document.getElementById("theta");
 const h0Slider = document.getElementById("h0");
-const gravitySlider = document.getElementById("gravity");
 
 const v0Val = document.getElementById("v0_val");
 const thetaVal = document.getElementById("theta_val");
 const h0Val = document.getElementById("h0_val");
-const gVal = document.getElementById("g_val");
 
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-let g = parseFloat(gravitySlider.value); // 重力加速度
+const g = 9.8; // 固定重力加速度 m/s²
 const scale = 4; // 畫布縮放比例
-const dt = 0.06; // 時間步長加快動畫 (原本 0.02)
+const dt = 0.06; // 動畫時間步長 → 3倍速
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
@@ -52,18 +49,16 @@ let h0 = parseFloat(h0Slider.value);
 let ball = { x: 50, y: 0, vx:0, vy:0, t:0 };
 let animating = false;
 
-// 更新顯示數值
+// 更新滑桿顯示
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
   thetaVal.textContent = thetaSlider.value;
   h0Val.textContent = h0Slider.value;
-  gVal.textContent = gravitySlider.value;
 }
 
 v0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 thetaSlider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 h0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
-gravitySlider.oninput = () => { g = parseFloat(gravitySlider.value); gVal.textContent = g; if(!animating) resetBall(); };
 
 // 初始化球
 function resetBall(){
