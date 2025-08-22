@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（3倍速）</title>
+<title>斜拋運動模擬（追蹤、比例尺）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -12,7 +12,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（3倍速）</h2>
+<h2>⚽ 斜拋運動模擬（追蹤、比例尺）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -30,26 +30,24 @@ const ctx = canvas.getContext("2d");
 const v0Slider = document.getElementById("v0");
 const thetaSlider = document.getElementById("theta");
 const h0Slider = document.getElementById("h0");
-
 const v0Val = document.getElementById("v0_val");
 const thetaVal = document.getElementById("theta_val");
 const h0Val = document.getElementById("h0_val");
-
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
 const g = 9.8; // 固定重力加速度 m/s²
-const scale = 4; // 畫布縮放比例
+const scale = 4; // 畫布縮放比例 (1 m -> 4 px)
 const dt = 0.06; // 動畫時間步長 → 3倍速
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
 let h0 = parseFloat(h0Slider.value);
 
-let ball = { x: 50, y: 0, vx:0, vy:0, t:0 };
+let ball = { x: 0, y: 0, vx:0, vy:0, t:0 };
 let animating = false;
+let trajectory = []; // 存放飛行軌跡
 
-// 更新滑桿顯示
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
   thetaVal.textContent = thetaSlider.value;
@@ -60,35 +58,62 @@ v0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 thetaSlider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 h0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 
-// 初始化球
 function resetBall(){
   v0 = parseFloat(v0Slider.value);
   theta = parseFloat(thetaSlider.value) * Math.PI / 180;
   h0 = parseFloat(h0Slider.value);
 
-  ball.x = 50;
+  ball.x = 0;
   ball.y = h0;
   ball.vx = v0 * Math.cos(theta);
   ball.vy = v0 * Math.sin(theta);
   ball.t = 0;
+  trajectory = [{x: ball.x, y: ball.y}];
 
   drawScene();
 }
 
-// 畫布
+// 繪製比例尺、地板、球和軌跡
 function drawScene(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 地面
+  // 計算偏移量 (追蹤球)
+  let offsetX = Math.min(Math.max(ball.x*scale - 100, 0), ball.x*scale);
+
+  // 地板
   ctx.beginPath();
-  ctx.moveTo(0, canvas.height);
-  ctx.lineTo(canvas.width, canvas.height);
+  ctx.moveTo(-offsetX, canvas.height);
+  ctx.lineTo(canvas.width - offsetX, canvas.height);
   ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 水平比例尺 (每10m一格)
+  for(let i=0;i<canvas.width/scale;i+=10){
+    ctx.beginPath();
+    ctx.moveTo(i*scale - offsetX, canvas.height);
+    ctx.lineTo(i*scale - offsetX, canvas.height - 5);
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+    ctx.fillText(i+" m", i*scale - offsetX - 10, canvas.height - 10);
+  }
+
+  // 軌跡
+  ctx.beginPath();
+  for(let i=0;i<trajectory.length;i++){
+    let p = trajectory[i];
+    let px = p.x*scale - offsetX;
+    let py = canvas.height - p.y*scale;
+    if(i===0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = "blue";
+  ctx.lineWidth = 2;
   ctx.stroke();
 
   // 球
   ctx.beginPath();
-  ctx.arc(ball.x, canvas.height - ball.y*scale, 8, 0, 2*Math.PI);
+  ctx.arc(ball.x*scale - offsetX, canvas.height - ball.y*scale, 8, 0, 2*Math.PI);
   ctx.fillStyle = "red";
   ctx.fill();
   ctx.stroke();
@@ -99,8 +124,9 @@ function animate(){
   if(!animating) return;
 
   ball.t += dt;
-  ball.x = 50 + ball.vx * ball.t * scale;
+  ball.x = ball.vx * ball.t;
   ball.y = h0 + ball.vy * ball.t - 0.5 * g * ball.t * ball.t;
+  trajectory.push({x: ball.x, y: ball.y});
 
   drawScene();
 
