@@ -2,16 +2,17 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>拋體運動模擬</title>
+  <title>斜拋運動模擬</title>
   <style>
     body { text-align: center; font-family: Arial, sans-serif; }
-    canvas { border: 1px solid black; display: block; margin: 10px auto; background: #eef; }
+    canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
     .controls { margin: 15px; }
-    label { display: block; margin: 5px; }
+    label { display: block; margin-top: 5px; }
+    button { margin: 10px; padding: 6px 12px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h2>⚽ 拋體運動模擬 (HTML5)</h2>
+  <h2>⚽ 斜拋運動模擬</h2>
   <canvas id="canvas" width="800" height="400"></canvas>
 
   <div class="controls">
@@ -36,15 +37,15 @@
     const startBtn = document.getElementById("startBtn");
     const resetBtn = document.getElementById("resetBtn");
 
-    // 模擬參數
+    const g = 9.8; // 重力加速度
     let v0 = parseFloat(v0Slider.value);
     let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
     let h0 = parseFloat(h0Slider.value);
-    const g = 9.8; // 重力加速度
 
-    // 球的狀態
-    let ball = { x: 50, y: canvas.height - h0, vx: 0, vy: 0, t: 0 };
+    let ball = { x: 0, y: 0, vx: 0, vy: 0, t: 0 };
     let animating = false;
+
+    const scale = 5; // 縮放比例，讓軌跡適合畫布
 
     // 更新滑桿顯示
     function updateLabels() {
@@ -53,26 +54,24 @@
       h0Val.textContent = h0Slider.value;
     }
 
-    v0Slider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
-    thetaSlider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
-    h0Slider.oninput = () => { updateLabels(); if (!animating) resetBall(); };
+    v0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
+    thetaSlider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
+    h0Slider.oninput = () => { updateLabels(); if(!animating) resetBall(); };
 
-    // 設定初始球位置
     function resetBall() {
       v0 = parseFloat(v0Slider.value);
       theta = parseFloat(thetaSlider.value) * Math.PI / 180;
       h0 = parseFloat(h0Slider.value);
 
-      ball.x = 50;
-      ball.y = canvas.height - h0;
-      ball.vx = v0 * Math.cos(theta);
-      ball.vy = -v0 * Math.sin(theta); // y 軸向下，所以取負號
+      ball.x = 50; // 畫布左側起點
+      ball.y = canvas.height - h0 * scale; // y 軸向下，所以減去高度
+      ball.vx = v0 * Math.cos(theta) * scale;
+      ball.vy = -v0 * Math.sin(theta) * scale; // 負號讓球向上
       ball.t = 0;
 
       drawScene();
     }
 
-    // 畫布
     function drawScene() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -85,47 +84,43 @@
 
       // 球
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y, 8, 0, 2 * Math.PI);
+      ctx.arc(ball.x, ball.y, 8, 0, 2*Math.PI);
       ctx.fillStyle = "red";
       ctx.fill();
       ctx.stroke();
     }
 
-    // 動畫
     function animate() {
-      if (!animating) return;
+      if(!animating) return;
 
-      ball.t += 0.05; // 時間步長
-      ball.x = 50 + ball.vx * ball.t;
-      ball.y = canvas.height - (h0 + ball.vy * ball.t - 0.5 * g * ball.t * ball.t);
+      ball.t += 0.02; // 每次時間增加
+      ball.x = 50 + ball.vx * ball.t / scale;
+      ball.y = canvas.height + (ball.vy * ball.t + 0.5 * g * scale * ball.t * ball.t) / -1; 
 
       drawScene();
 
-      // 停在地面
-      if (ball.y >= canvas.height) {
+      if(ball.y >= canvas.height) {
         animating = false;
         ball.y = canvas.height;
+        drawScene();
       } else {
         requestAnimationFrame(animate);
       }
     }
 
-    // 開始按鈕
     startBtn.onclick = () => {
-      if (!animating) {
-        resetBall(); // 根據目前參數設定速度
+      if(!animating) {
+        resetBall();
         animating = true;
         animate();
       }
     };
 
-    // 重設按鈕
     resetBtn.onclick = () => {
       animating = false;
       resetBall();
     };
 
-    // 初始顯示
     updateLabels();
     resetBall();
   </script>
