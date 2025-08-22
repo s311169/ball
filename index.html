@@ -2,18 +2,18 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（即時位移 + 最高點標示）</title>
+<title>斜拋運動模擬（即時位移）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
 .controls { margin: 15px; }
 label { display: block; margin-top: 5px; }
 button { margin: 10px; padding: 6px 12px; font-size: 16px; }
-.info { font-size: 18px; margin-top: 10px; }
+#displacement { margin-top: 10px; font-size: 18px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（即時位移 + 最高點標示）</h2>
+<h2>⚽ 斜拋運動模擬（即時位移）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -24,9 +24,8 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
   <button id="resetBtn">重設</button>
 </div>
 
-<div class="info">
-  水平位移 X: <span id="dispX">0</span> m ，鉛直位移 Y: <span id="dispY">0</span> m<br>
-  最高點高度: <span id="maxY">0</span> m
+<div id="displacement">
+  水平位移 X: <span id="dispX">0</span> m ，鉛直位移 Y: <span id="dispY">0</span> m
 </div>
 
 <script>
@@ -46,11 +45,10 @@ const resetBtn = document.getElementById("resetBtn");
 
 const dispX = document.getElementById("dispX");
 const dispY = document.getElementById("dispY");
-const maxYspan = document.getElementById("maxY");
 
 const g = 9.8; // m/s²
 const scale = 4; // 1 m -> 4 px
-const dt = 0.02; // 動畫步長
+const dt = 0.02; // 真實速度動畫步長
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI/180;
@@ -59,7 +57,6 @@ let h0 = parseFloat(h0Slider.value);
 let ball = {x:0, y:0, vx:0, vy:0, t:0};
 let animating = false;
 let trajectory = [];
-let highestY = 0;
 
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
@@ -82,16 +79,15 @@ function resetBall(){
   ball.vy = v0 * Math.sin(theta);
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
-  highestY = ball.y;
 
-  updateInfo();
+  updateDisplacement();
   drawScene();
 }
 
-function updateInfo(){
+function updateDisplacement(){
+  // 更新下方即時位移
   dispX.textContent = ball.x.toFixed(2);
   dispY.textContent = ball.y.toFixed(2);
-  maxYspan.textContent = highestY.toFixed(2);
 }
 
 function drawScene(){
@@ -102,6 +98,34 @@ function drawScene(){
   let offsetY = ball.y*scale - canvas.height/2;
   if(offsetX < 0) offsetX = 0;
   if(offsetY < 0) offsetY = 0;
+
+  // 水平比例尺，每10m一格
+  let maxHorizontal = offsetX/scale + canvas.width/scale + 20;
+  for(let i=0;i<=maxHorizontal;i+=10){
+    let px = i*scale - offsetX;
+    ctx.beginPath();
+    ctx.moveTo(px, 0);
+    ctx.lineTo(px, canvas.height);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.fillText(i+" m", px+2, canvas.height-2);
+  }
+
+  // 垂直比例尺，每10m一格
+  let maxVertical = offsetY/scale + canvas.height/scale + 20;
+  for(let j=0;j<=maxVertical;j+=10){
+    let py = canvas.height - (j*scale - offsetY);
+    ctx.beginPath();
+    ctx.moveTo(0, py);
+    ctx.lineTo(canvas.width, py);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.fillText(j+" m", 2, py-2);
+  }
 
   // 軌跡
   ctx.beginPath();
@@ -124,18 +148,6 @@ function drawScene(){
   ctx.fillStyle = "red";
   ctx.fill();
   ctx.stroke();
-
-  // 標示最高點
-  let pyMax = canvas.height - (highestY*scale - offsetY);
-  ctx.beginPath();
-  ctx.moveTo(0, pyMax);
-  ctx.lineTo(canvas.width, pyMax);
-  ctx.strokeStyle = "green";
-  ctx.setLineDash([5,5]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = "green";
-  ctx.fillText("最高點: " + highestY.toFixed(2) + " m", 10, pyMax-5);
 }
 
 function animate(){
@@ -147,9 +159,7 @@ function animate(){
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
-  if(ball.y > highestY) highestY = ball.y;
-
-  updateInfo();
+  updateDisplacement(); // 更新位移
   drawScene();
 
   if(ball.y <= 0 && ball.t>0){
