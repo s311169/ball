@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（即時位移）</title>
+<title>斜拋運動模擬（最高點標示）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -13,7 +13,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（即時位移）</h2>
+<h2>⚽ 斜拋運動模擬（即時位移 + 最高點標示）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -57,6 +57,7 @@ let h0 = parseFloat(h0Slider.value);
 let ball = {x:0, y:0, vx:0, vy:0, t:0};
 let animating = false;
 let trajectory = [];
+let highestY = null; // 最高點
 
 function updateLabels(){
   v0Val.textContent = v0Slider.value;
@@ -79,13 +80,13 @@ function resetBall(){
   ball.vy = v0 * Math.sin(theta);
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
+  highestY = null;
 
   updateDisplacement();
   drawScene();
 }
 
 function updateDisplacement(){
-  // 更新下方即時位移
   dispX.textContent = ball.x.toFixed(2);
   dispY.textContent = ball.y.toFixed(2);
 }
@@ -148,6 +149,21 @@ function drawScene(){
   ctx.fillStyle = "red";
   ctx.fill();
   ctx.stroke();
+
+  // 標示最高點
+  if(highestY !== null){
+    let py = canvas.height - (highestY*scale - offsetY);
+    ctx.beginPath();
+    ctx.moveTo(0, py);
+    ctx.lineTo(canvas.width, py);
+    ctx.strokeStyle = "green";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5,5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "green";
+    ctx.fillText("最高點: " + highestY.toFixed(2) + " m", 10, py-5);
+  }
 }
 
 function animate(){
@@ -159,7 +175,10 @@ function animate(){
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
-  updateDisplacement(); // 更新位移
+  // 更新最高點
+  if(highestY === null || ball.y > highestY) highestY = ball.y;
+
+  updateDisplacement();
   drawScene();
 
   if(ball.y <= 0 && ball.t>0){
