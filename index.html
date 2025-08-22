@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（暫停功能）</title>
+<title>斜拋運動模擬（暫停按鈕）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -13,7 +13,7 @@ button { margin: 5px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（暫停功能）</h2>
+<h2>⚽ 斜拋運動模擬（暫停按鈕）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -58,6 +58,7 @@ let h0 = parseFloat(h0Slider.value);
 
 let ball = {x:0, y:0, vx:0, vy:0, t:0};
 let animating = false;
+let paused = false;
 let trajectory = [];
 
 function updateLabels(){
@@ -82,6 +83,7 @@ function resetBall(){
   ball.t = 0;
   trajectory = [{x: ball.x, y: ball.y}];
 
+  paused = false;
   updateDisplacement();
   drawScene();
 }
@@ -94,7 +96,6 @@ function updateDisplacement(){
 function drawScene(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 自動追蹤球
   let offsetX = ball.x*scale - canvas.width/4;
   let offsetY = ball.y*scale - canvas.height/2;
   if(offsetX < 0) offsetX = 0;
@@ -144,7 +145,7 @@ function drawScene(){
   let ballX = ball.x*scale - offsetX;
   let ballY = canvas.height - (ball.y*scale - offsetY);
   ctx.arc(ballX, ballY, 8, 0, 2*Math.PI);
-  ctx.fillStyle = "red";
+  ctx.fillStyle = paused ? "orange" : "red"; // 暫停顏色提示
   ctx.fill();
   ctx.stroke();
 }
@@ -163,28 +164,35 @@ function animate(){
 
   if(ball.y<=0 && ball.t>0){
     animating=false;
+    paused=false;
     drawScene();
   } else {
     requestAnimationFrame(animate);
   }
 }
 
+// 按鈕事件
 startBtn.onclick = () => { 
   if(!animating){ 
     animating=true; 
+    paused=false;
     animate(); 
   }
 };
 
 pauseBtn.onclick = () => {
   animating=false;
+  paused=true;
+  drawScene();
 };
 
 resetBtn.onclick = () => { 
   animating=false; 
+  paused=false;
   resetBall(); 
 };
 
+// 初始化
 updateLabels();
 resetBall();
 </script>
