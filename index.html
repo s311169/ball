@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（公尺單位）</title>
+<title>斜拋運動模擬（公尺單位，動畫加快）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -12,7 +12,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（公尺單位）</h2>
+<h2>⚽ 斜拋運動模擬（公尺單位，動畫加快）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -43,7 +43,7 @@ const resetBtn = document.getElementById("resetBtn");
 
 let g = parseFloat(gravitySlider.value); // 重力加速度
 const scale = 4; // 畫布縮放比例
-const dt = 0.02; // 秒
+const dt = 0.06; // 時間步長加快動畫 (原本 0.02)
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI / 180;
