@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>斜拋運動模擬（即時位移）</title>
+<title>斜拋運動模擬（比例尺）</title>
 <style>
 body { text-align: center; font-family: Arial, sans-serif; }
 canvas { border: 1px solid black; background: #eef; display: block; margin: 10px auto; }
@@ -13,7 +13,7 @@ button { margin: 10px; padding: 6px 12px; font-size: 16px; }
 </style>
 </head>
 <body>
-<h2>⚽ 斜拋運動模擬（即時位移）</h2>
+<h2>⚽ 斜拋運動模擬（比例尺）</h2>
 <canvas id="canvas" width="800" height="400"></canvas>
 
 <div class="controls">
@@ -48,7 +48,7 @@ const dispY = document.getElementById("dispY");
 
 const g = 9.8; // m/s²
 const scale = 4; // 1 m -> 4 px
-const dt = 0.02; // 真實速度動畫步長
+const dt = 0.02;
 
 let v0 = parseFloat(v0Slider.value);
 let theta = parseFloat(thetaSlider.value) * Math.PI/180;
@@ -85,7 +85,6 @@ function resetBall(){
 }
 
 function updateDisplacement(){
-  // 更新下方即時位移
   dispX.textContent = ball.x.toFixed(2);
   dispY.textContent = ball.y.toFixed(2);
 }
@@ -104,26 +103,24 @@ function drawScene(){
   for(let i=0;i<=maxHorizontal;i+=10){
     let px = i*scale - offsetX;
     ctx.beginPath();
-    ctx.moveTo(px, 0);
-    ctx.lineTo(px, canvas.height);
-    ctx.strokeStyle = "#aaa";
-    ctx.lineWidth = 1;
+    ctx.moveTo(px,0);
+    ctx.lineTo(px,canvas.height);
+    ctx.strokeStyle="#aaa"; ctx.lineWidth=1;
     ctx.stroke();
-    ctx.fillStyle = "black";
+    ctx.fillStyle="black";
     ctx.fillText(i+" m", px+2, canvas.height-2);
   }
 
   // 垂直比例尺，每10m一格
   let maxVertical = offsetY/scale + canvas.height/scale + 20;
   for(let j=0;j<=maxVertical;j+=10){
-    let py = canvas.height - (j*scale - offsetY);
+    let py = canvas.height-(j*scale - offsetY);
     ctx.beginPath();
-    ctx.moveTo(0, py);
-    ctx.lineTo(canvas.width, py);
-    ctx.strokeStyle = "#aaa";
-    ctx.lineWidth = 1;
+    ctx.moveTo(0,py);
+    ctx.lineTo(canvas.width,py);
+    ctx.strokeStyle="#aaa"; ctx.lineWidth=1;
     ctx.stroke();
-    ctx.fillStyle = "black";
+    ctx.fillStyle="black";
     ctx.fillText(j+" m", 2, py-2);
   }
 
@@ -133,8 +130,8 @@ function drawScene(){
     let p = trajectory[i];
     let px = p.x*scale - offsetX;
     let py = canvas.height - (p.y*scale - offsetY);
-    if(i===0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+    if(i===0) ctx.moveTo(px,py);
+    else ctx.lineTo(px,py);
   }
   ctx.strokeStyle = "blue";
   ctx.lineWidth = 2;
@@ -159,29 +156,19 @@ function animate(){
   if(ball.y<0) ball.y=0;
   trajectory.push({x: ball.x, y: ball.y});
 
-  updateDisplacement(); // 更新位移
+  updateDisplacement();
   drawScene();
 
-  if(ball.y <= 0 && ball.t>0){
-    animating = false;
+  if(ball.y<=0 && ball.t>0){
+    animating=false;
     drawScene();
   } else {
     requestAnimationFrame(animate);
   }
 }
 
-startBtn.onclick = () => {
-  if(!animating){
-    resetBall();
-    animating = true;
-    animate();
-  }
-};
-
-resetBtn.onclick = () => {
-  animating = false;
-  resetBall();
-};
+startBtn.onclick = () => { if(!animating){ resetBall(); animating=true; animate(); } };
+resetBtn.onclick = () => { animating=false; resetBall(); };
 
 updateLabels();
 resetBall();
